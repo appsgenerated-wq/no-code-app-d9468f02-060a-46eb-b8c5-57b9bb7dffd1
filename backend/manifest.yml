@@ -1,0 +1,148 @@
+name: FlavorFleet
+
+entities:
+  User:
+    authenticable: true
+    properties:
+      - name
+      - name: email
+        type: email
+      - name: role
+        type: choice
+        options:
+          values: [admin, owner, customer]
+        default: customer
+    policies:
+      create:
+        - access: admin
+      read:
+        - access: restricted
+          allow: User
+          condition: self
+        - access: admin
+      update:
+        - access: restricted
+          allow: User
+          condition: self
+      delete:
+        - access: admin
+      signup:
+        - access: public
+
+  Restaurant:
+    properties:
+      - name: name
+        type: string
+      - name: description
+        type: text
+      - name: address
+        type: string
+      - name: coverImage
+        type: image
+        options:
+          sizes:
+            thumbnail:
+              width: 400
+              height: 250
+            large:
+              width: 1200
+              height: 750
+    belongsTo:
+      - name: owner
+        entity: User
+    policies:
+      create:
+        - access: restricted
+          allow: User
+      read:
+        - access: public
+      update:
+        - access: restricted
+          allow: User
+          condition: self
+      delete:
+        - access: restricted
+          allow: User
+          condition: self
+
+  MenuItem:
+    properties:
+      - name: name
+        type: string
+      - name: description
+        type: text
+      - name: price
+        type: money
+        options:
+          currency: 'USD'
+      - name: image
+        type: image
+        options:
+          sizes:
+            small:
+              width: 100
+              height: 100
+    belongsTo:
+      - name: restaurant
+        entity: Restaurant
+      - name: owner
+        entity: User # For easier policy checks
+    policies:
+      create:
+        - access: restricted
+          allow: User
+      read:
+        - access: public
+      update:
+        - access: restricted
+          allow: User
+          condition: self
+      delete:
+        - access: restricted
+          allow: User
+          condition: self
+
+  Order:
+    properties:
+      - name: totalPrice
+        type: money
+        options:
+          currency: 'USD'
+      - name: status
+        type: choice
+        options:
+          values: [pending, confirmed, delivered, cancelled]
+        default: pending
+    belongsTo:
+      - name: customer
+        entity: User
+    belongsToMany:
+      - name: menuItems
+        entity: MenuItem
+    policies:
+      create:
+        - access: restricted
+          allow: User
+      read:
+        - access: restricted
+          allow: User
+          condition: self
+      update:
+        - access: admin
+      delete:
+        - access: admin
+
+# Global CORS handler for all preflight OPTIONS requests
+endpoints:
+  cors:
+    path: /api/*
+    method: OPTIONS
+    policies: []
+    handler: healthCheck
+
+# Health check endpoint for connection testing
+  health:
+    path: /api/health
+    method: GET
+    policies: []
+    handler: healthCheck
